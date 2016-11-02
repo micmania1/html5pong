@@ -1,124 +1,547 @@
 <!DOCTYPE html>
+<!-- saved from url=(0037)http://micmania1.github.io/html5pong/ -->
 <html>
-	<head>
-		<title>HTML5 Canvas PONG game</title>
-		
-		<script type="text/javascript" src="lib/Game.js"></script>
-		<script type="text/javascript" src="lib/Background.js"></script>
-		<script type="text/javascript" src="lib/Paddle.js"></script>
-		<script type="text/javascript" src="lib/Player.js"></script>
-		<script type="text/javascript" src="lib/Opponent.js"></script>
-		<script type="text/javascript" src="lib/Ball.js"></script>
-		
-		<style type="text/css">
-		body
-		{
-			margin: 0px;
-			padding: 0px;
-			text-align: center;
-		}
-		
-		canvas
-		{
-			margin: 0px auto;
-		}
-		
-		fieldset
-		{
-			border: none;
-		}
-		
-		label
-		{
-			display: block;
-		}
-		
-		input
-		{
-			margin-bottom: 10px;
-		}
-		
-		.controls
-		{
-			float: left;
-			text-align: left;
-		}
-		
-		.form
-		{
-			float: right;
-			text-align: right;
-		}
-		
-		.clear
-		{
-			clear: both;
-		}
-		
-		.container
-		{
-			width: 740px;
-			margin: 0px auto;
-		}
-		</style>
-	</head>
-	<body>
-		<h1>HTML5 Canvas Game - Pong</h1>
-		<div class="container">
-			<canvas id="pong" width="740" height="640">
-				This browser can not run this game (canvas support missing).
-			</canvas>
-			
-			<div class="clear"></div>
-			
-			<div class="controls">
-				<h3>Controls</h3>
-				
-				<h4>Player 1</h4>
-				<ul>
-					<li>Pause - P</li>
-					<li>Left - Left Arrow</li>
-					<li>Right - Right Arrow</li>
-				</ul>
-				
-				<h4>Player 2</h4>
-				<ul>
-					<li>Pause - P</li>
-					<li>Left - A</li>
-					<li>Right - D</li>
-				</ul>
-			</div>
-			
-			<div class="form">
-				<form action="#" method="get" id="settings">
-					<fieldset>
-						<label for="number_of_players">No. of Players</label>
-						<input type="number" value="1" min="1" max="2" id="number_of_players" name="number_of_players">
-					</fieldset>
-					
-					<fieldset>
-						<label for="difficulty">Difficulty</label>
-						<input type="number" value="5" min="1" id="difficulty" name="difficulty">
-					</fieldset>
-					
-					<fieldset>
-						<input type="button" name="start" value="Start" onclick="Javascript: startGame();">
-					</fieldset>
-				</form>
-			</div>
-			
-			<div class="clear"></div>
-		</div>
-		
-		<script type="text/javascript">
-			var game = new Game("pong");
-			function startGame()
-			{
-				var form = document.getElementById("settings");
-				game.number_of_players = form.number_of_players.value;
-				game.difficulty = form.difficulty.value;
-				game.start();
-			}
-		</script>
-	</body>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>HTML5 Canvas PONG game</title>
+
+    <style type="text/css">
+        body {
+            margin: 0px;
+            padding: 0px;
+            text-align: center;
+        }
+
+        canvas {
+            margin: 0px auto;
+        }
+
+        ul {
+        	margin: 5px 0;
+        }
+
+        h3 {
+        	margin: 0;
+        }
+
+        .controls {
+            display: inline-block;
+            text-align: left;
+            vertical-align: top;
+        }
+    </style>
+</head>
+<body>
+<h1>HTML5 Canvas Game - Pong</h1>
+
+<div class="container">
+    <canvas id="pong" width="740" height="640">
+        This browser can not run this game (canvas support missing).
+    </canvas>
+
+    <div class="controls">
+        <h3>Controls</h3>
+        <ul>
+            <li>Pause - P</li>
+            <li>Left - Left Arrow</li>
+            <li>Right - Right Arrow</li>
+        </ul>
+    </div>
+
+    <div style="margin: 10px 0;">
+		<a href="https://github.com/blakefaris/html5pong">Git Repo</a>
+	</div>
+</div>
+
+<script type="text/javascript" id="game.js">
+    var Game = function (canvas_id) {
+        this.fps = 10; // Frames per second; limits the loop speed
+
+        var canvas = document.getElementById(canvas_id);
+        this.context = canvas.getContext("2d");
+        this.client = { width: canvas.width, height: canvas.height };
+        this.difficulty = 5;
+        this.state = "start";
+
+        // Controls
+        this.keysPressed = {
+            "left": false,
+            "up": false,
+            "right": false,
+            "down": false,
+            "paused": false
+        }
+
+        // Define controls
+        var keysPressed = this.keysPressed;
+        document.onkeydown = function (event) {
+            var keyCode;
+
+            if (event == null) {
+                keyCode = window.event.keyCode;
+            } else {
+                keyCode = event.keyCode;
+            }
+
+
+            switch (keyCode) {
+                case 37:
+                    keysPressed.left = true;
+                    break;
+                case 39:
+                    keysPressed.right = true;
+                    break;
+                case 65:
+                    keysPressed.p2_left = true;
+                    break;
+                case 68:
+                    keysPressed.p2_right = true;
+                    break;
+                case 80:
+                    keysPressed.paused = (keysPressed.paused == false) ? true : false;
+                    break;
+            }
+        }
+
+        document.onkeyup = function (event) {
+            var keyCode;
+
+            if (event == null) {
+                keyCode = window.event.keyCode;
+            } else {
+                keyCode = event.keyCode;
+            }
+
+            switch (keyCode) {
+                case 37:
+                    keysPressed.left = false;
+                    break;
+                case 39:
+                    keysPressed.right = false;
+                    break;
+                case 65:
+                    keysPressed.p2_left = false;
+                    break;
+                case 68:
+                    keysPressed.p2_right = false;
+                    break;
+            }
+        }
+
+        // Add the background
+        this.background = new Background(this);
+
+        var game = this;
+        this.game = this;
+        var main = setInterval(function () {
+            game.update();
+            game.draw();
+        }, this.fps);
+    }
+
+    Game.prototype.__toString = function () {
+        return "Game";
+    }
+
+    Game.prototype.update = function () {
+        var timestamp = new Date().getTime();
+
+        this.background.update(timestamp);
+        if (this.state == "play") {
+            this.player.update(timestamp);
+            this.opponent.update(timestamp);
+            this.ball.update(timestamp);
+        }
+    }
+
+    Game.prototype.draw = function () {
+        if (this.state == "play") {
+            if (!this.keysPressed.paused) {
+                this.background.draw();
+                this.player.draw();
+                this.opponent.draw();
+                this.ball.draw();
+            }
+            else {
+                this.context.fillStyle = '#FF0000';
+                this.context.font = 'bold 80px sans-serif';
+                this.context.textBaseline = 'middle';
+                this.context.textAlign = 'center';
+
+                this.context.fillText("Paused", this.client.width / 2, this.game.client.height / 2);
+
+            }
+        }
+        else if (this.state == "start") {
+            this.background.draw();
+        }
+    }
+
+    Game.prototype.drawRectangle = function (color, x, y, width, height) {
+        this.context.fillStyle = color;
+        this.context.fillRect(x, y, width, height);
+    }
+
+    Game.prototype.start = function () {
+        // Add Game Objects
+        this.player = new Player(this);
+        this.opponent = new Opponent(this);
+        this.opponent.difficulty = this.difficulty;
+
+        // Add the ball
+        this.ball = new Ball(this);
+
+        this.state = "play";
+    }
+
+    Game.prototype.restart = function () {
+        this.player.score = 0;
+        this.opponent.score = 0;
+        this.resetLevel();
+    }
+
+    Game.prototype.resetLevel = function () {
+        this.keysPressed.left = false;
+        this.keysPressed.right = false;
+        this.keysPressed.up = false;
+        this.keysPressed.down = false;
+        this.keysPressed.paused = false;
+        this.state = "play";
+
+        this.opponent.resetLevel();
+        this.player.resetLevel();
+        this.ball.resetLevel();
+    }
+</script>
+
+<script type="text/javascript" id="background.js">
+    var Background = function (game) {
+        this.game = game;
+        this.color = "#000000";
+    }
+
+    Background.prototype.__toString = function () {
+        return "Background";
+    }
+
+    Background.prototype.update = function (currentTime) {
+    }
+
+    Background.prototype.draw = function () {
+        this.game.drawRectangle(this.color, 0, 0, this.game.client.width, this.game.client.height);
+
+        this.game.context.fillStyle = '#333333';
+        this.game.context.font = 'bold 80px sans-serif';
+        this.game.context.textBaseline = 'middle';
+        this.game.context.textAlign = 'center';
+
+
+        if (typeof(this.game.opponent) != "undefined" && typeof(this.game.player) != "undefined") {
+            this.game.drawRectangle("#333333", 0, this.game.client.height / 2, this.game.client.width, 1);
+            this.game.context.fillText(this.game.opponent.score, this.game.client.width / 2, this.game.client.height / 4);
+            this.game.context.fillText(this.game.player.score, this.game.client.width / 2, (this.game.client.height - (this.game.client.height / 4)));
+        }
+        else {
+            this.game.context.font = 'bold 50px sans-serif';
+            this.game.context.fillStyle = '#FF0000';
+            this.game.context.fillText("START THE GAME BELOW", this.game.client.width / 2, this.game.client.height / 2);
+        }
+    }
+</script>
+
+<script type="text/javascript" id="paddle.js">
+    var Paddle = function (parent) {
+        this.parent = parent;
+        this.updateTime = new Date().getTime();
+
+        this.width = 100;
+        this.height = 10;
+
+        this.position = { x: 0, y: 0 }
+        this.velocity = { x: 0, y: 0 }
+        this.color = "#FFFFFF";
+    }
+
+    Paddle.prototype.__toString = function () {
+        return "Paddle";
+    }
+
+
+    Paddle.prototype.update = function (currentTime) {
+        if (!this.parent.game.keysPressed.paused) {
+            this.checkCollisions();
+
+            var elapsedTime = currentTime - this.updateTime;
+            this.position.x += this.velocity.x * (elapsedTime / 1000);
+            this.position.y += this.velocity.y * (elapsedTime / 1000);
+        }
+        this.updateTime = currentTime;
+    }
+
+    Paddle.prototype.draw = function () {
+        this.parent.game.drawRectangle(this.color, this.position.x, this.position.y, this.width, this.height);
+    }
+
+    Paddle.prototype.checkCollisions = function () {
+        if (this.position.x > (this.parent.game.client.width - this.width)) {
+            this.position.x = (this.parent.game.client.width - this.width);
+        }
+        else if (this.position.x < 0) {
+            this.position.x = 0;
+        }
+    }
+
+    Paddle.prototype.hitBall = function () {
+
+        if (this.parent.game.ball.state != "coliding") {
+            this.parent.game.ball.state = "colliding";
+
+            // The ball has hit the paddle
+            this.parent.game.ball.velocity.y *= -1;
+
+            // Increase the speed
+            this.parent.game.ball.velocity.x *= 1.1;
+            this.parent.game.ball.velocity.y *= 1.1;
+        }
+    }
+
+    Paddle.prototype.resetLevel = function () {
+    }
+</script>
+
+<script type="text/javascript" id="player.js">
+    var Player = function (game) {
+        this.game = game;
+        this.paddle = new Paddle(this);
+        this.updateTime = new Date().getTime();
+        this.keyset = "player_1";
+
+        // Setup the paddle
+        // Position the player at the bottom of the screen in the center
+        this.default_position = {
+            x: (this.game.client.width / 2) - (this.paddle.width / 2),
+            y: this.game.client.height - (this.paddle.height + 10)
+        }
+        this.paddle.position = { x: this.default_position.x, y: this.default_position.y }
+
+        this.score = 0;
+    }
+
+    Player.prototype.__toString = function () {
+        return "Player";
+    }
+
+    Player.prototype.update = function (currentTime) {
+        if (!this.game.keysPressed.paused) {
+            var elapsedTime = currentTime - this.updateTime;
+            if (this.game.keysPressed.left) {
+                this.paddle.velocity.x = -800;
+            }
+            else if (this.game.keysPressed.right) {
+                this.paddle.velocity.x = 800;
+            }
+            else {
+                this.paddle.velocity.x = 0;
+            }
+            this.paddle.update(currentTime);
+        }
+        this.updateTime = currentTime;
+    }
+
+    Player.prototype.draw = function () {
+        this.paddle.draw();
+    }
+
+    Player.prototype.resetLevel = function () {
+        // Position the player at the bottom of the screen in the center
+        this.paddle.position =
+        {
+            x: this.default_position.x,
+            y: this.default_position.y
+        }
+        this.paddle.resetLevel();
+    }
+</script>
+
+<script type="text/javascript" id="opponent.js">
+    var Opponent = function (game) {
+        this.game = game;
+        this.paddle = new Paddle(this);
+        this.updateTime = new Date().getTime();
+
+        // Setup the paddle
+        this.paddle.position =
+        {
+            x: (this.game.client.width / 2) - (this.paddle.width / 2),
+            y: 10
+        }
+
+        this.difficulty = 5;
+        this.score = 0;
+        this.state = "still";
+    }
+
+    Opponent.prototype.__toString = function () {
+        return "Opponent";
+    }
+
+
+    Opponent.prototype.update = function (currentTime) {
+        if (!this.game.keysPressed.paused) {
+            var elapsedTime = currentTime - this.updateTime;
+
+            if ((this.game.ball.position.x > this.paddle.position.x + (this.paddle.width / 2)) && (this.game.ball.velocity.x > 0) && (this.paddle.position.x < (this.game.client.width - this.paddle.width))) {
+                this.paddle.velocity.x = 100 * this.difficulty;
+                if (this.paddle.velocity.x > this.game.ball.velocity.x) {
+                    // No point running faster than the ball - makes it look laggy
+                    this.paddle.velocity.x = this.game.ball.velocity.x;
+                }
+            }
+            else if ((this.game.ball.position.x < this.paddle.position.x + (this.paddle.width / 2)) && (this.game.ball.velocity.x < 0) && (this.paddle.position.x > 0)) {
+                this.paddle.velocity.x = -100 * this.difficulty;
+                if (this.paddle.velocity.x < this.game.ball.velocity.x) {
+                    // No point running faster than the ball - makes it look laggy
+                    this.paddle.velocity.x = this.game.ball.velocity.x;
+                }
+            }
+            else {
+                this.paddle.velocity.x = 0;
+            }
+        }
+        this.paddle.update(currentTime);
+        this.updateTime = currentTime;
+    }
+
+    Opponent.prototype.draw = function () {
+        this.paddle.draw();
+    }
+
+
+    Opponent.prototype.resetLevel = function () {
+        // Position the player at the bottom of the screen in the center
+        this.paddle.position =
+        {
+            x: (this.game.client.width / 2) - (this.paddle.width / 2),
+            y: 10
+        }
+        this.paddle.resetLevel();
+    }
+</script>
+
+
+
+<script type="text/javascript" id="ball.js">
+    var Ball = function (game) {
+        this.game = game;
+        this.updateTime = new Date().getTime();
+
+        this.width = 10;
+        this.height = 10;
+        this.position = { x: 0, y: 0 }
+        this.velocity = { x: 0, y: 0 }
+        this.state = "start";
+
+        this.resetLevel();
+        this.color = "#00FF00";
+    }
+
+    Ball.prototype.__toString = function () {
+        return "Ball";
+    }
+
+
+    Ball.prototype.update = function (currentTime) {
+        if (!this.game.keysPressed.paused) {
+            this.checkCollisions();
+
+            // When the ball resets, we want to pause for a bit
+            if ((currentTime - this.startTime) > 1000) {
+                this.state = "moving";
+                var elapsedTime = currentTime - this.updateTime;
+                this.position.x += this.velocity.x * (elapsedTime / 1000);
+                this.position.y += this.velocity.y * (elapsedTime / 1000);
+            }
+            else {
+                this.state = "still";
+            }
+        }
+        this.updateTime = currentTime;
+    }
+
+    Ball.prototype.draw = function () {
+        this.game.drawRectangle(this.color, this.position.x, this.position.y, this.width, this.height);
+    }
+
+    Ball.prototype.checkCollisions = function () {
+        // Check to see if the ball is outside of the canvas area (on y-axis only)
+        if (this.position.y < (0 - this.height)) {
+            this.game.player.score++;
+            this.game.resetLevel();
+        }
+        else if (this.position.y > this.game.client.height) {
+            this.game.opponent.score++;
+            this.game.resetLevel();
+        }
+
+        // Check for collisions with the sidewall
+        if ((this.position.x < 0) || (this.position.x > (this.game.client.width - this.width))) {
+            if (this.state != "collidingSidewall") {
+                // Reverse the direction
+                this.velocity.x *= -1;
+                if (this.position.x < 0) {
+                    this.position.x = 0;
+                }
+                else {
+                    this.position.x = this.game.client.width - this.width;
+                }
+
+                this.state = "collidingSidewall";
+            }
+        }
+        else {
+            this.state = "moving";
+        }
+
+        // Check for collision with the paddle
+        var min_x = this.game.player.paddle.position.x;
+        var max_x = min_x + this.game.player.paddle.width;
+        var min_x_opp = this.game.opponent.paddle.position.x;
+        var max_x_opp = min_x_opp + this.game.opponent.paddle.width;
+
+        // Check for collisions with the players paddle
+        if (((this.position.y + this.height) >= this.game.player.paddle.position.y) && (this.position.x >= min_x && this.position.x <= max_x)) {
+            this.position.y = (this.game.player.paddle.position.y - this.height + 1);
+            this.game.player.paddle.hitBall();
+        }
+        else if (((this.position.y) <= (this.game.opponent.paddle.position.y + this.game.opponent.paddle.height)) && (this.position.x >= min_x_opp && this.position.x <= max_x_opp)) {
+            this.position.y = (this.game.opponent.paddle.position.y + this.game.opponent.paddle.height + 1);
+            this.game.opponent.paddle.hitBall();
+        }
+    }
+
+    Ball.prototype.resetLevel = function () {
+        this.state = "start";
+        this.position =
+        {
+            x: (this.game.client.width / 2) - (this.width / 2),
+            y: (this.game.client.height / 2) - (this.height / 2)
+        }
+
+        var randomX = (Math.floor(Math.random() * 50) + 100) * 2;
+        this.velocity =
+        {
+            x: (Math.floor(Math.random() * 2) == 0) ? randomX : randomX * -1,
+            y: (Math.floor(Math.random() * 2) == 0) ? 150 : -150
+        }
+
+        this.startTime = new Date().getTime();
+    }
+</script>
+
+<script type="text/javascript">
+    var game = new Game("pong");
+    game.start();
+</script>
+
+</body>
 </html>
